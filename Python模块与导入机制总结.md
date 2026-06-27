@@ -102,4 +102,40 @@ def load_heavy_model():
     *   删除它不会影响程序逻辑，下一次运行/导入时 Python 会重新生成。
     *   **开发习惯**：字节码文件与特定的 Python 平台及版本绑定，不应该被提交到版本控制系统中。在 `.gitignore` 中通常会配置 `**/__pycache__/`。
 
+---
+
+## 五、 VS Code 中“无法解析导入”报错与多 Python 环境排查
+
+在 VS Code 中编写 Python 代码时，导入第三方库（如 `requests`, `loguru` 等）常会遇到黄色波浪线报错，提示 `无法解析导入 "xxx" (reportMissingImports)`。
+
+### 1. 产生报错的核心原因
+1.  **未在当前环境安装依赖**：该 Python 环境中确实没有安装对应的第三方包。
+2.  **解释器选择不一致**：你可能已经在终端的某个虚拟环境（如 Conda、venv）里安装了依赖，但 VS Code 编辑器窗口选用的却是系统的全局 Python 解释器。
+
+### 2. 排查与解决方法
+
+#### 第一步：在 VS Code 终端中定位已安装库的路径
+在 VS Code 内置终端中运行：
+```bash
+pip show <库名>  # 例如：pip show loguru
+```
+*   **如果已安装**：输出会显示该库的详细信息。请特别留意 **`Location:`** 字段的路径。
+    *   *示例*：若 `Location` 为 `/Users/xxx/opt/miniconda3/lib/python3.9/site-packages`，说明依赖安装在 Conda 的 `base` 环境中。
+*   **如果未安装**：会提示 `WARNING: Package(s) not found`。可以通过运行 `pip --version` 查看当前终端使用的是哪个环境的 pip，并直接在该环境下运行安装命令：
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+#### 第二步：在 VS Code 中选择与终端对应的 Python 解释器
+1.  在 VS Code 中按快捷键 `Cmd + Shift + P`（Mac）或 `Ctrl + Shift + P`（Windows）唤起命令面板。
+2.  输入并选择 **`Python: Select Interpreter`**。
+3.  在弹出的列表中，找到与你在第一步中查到的 `Location` 路径（或 `pip --version` 路径）相匹配的环境。
+    *   例如：如果依赖在 miniconda3 的 base 下，在列表中选中 `base` 环境即可。
+4.  选中后，等待 VS Code 重新索引，编辑器中的导入报错波浪线即可消除。
+
+#### 💡 避坑提示：避免使用系统自带的 Python
+在 macOS 列表中，通常会出现 `/usr/bin/python3`。这是 macOS 系统级的 Python：
+*   它通常受到系统读写权限限制，无法（也不应该）使用 `pip` 安装第三方库。
+*   如果 VS Code 默认选中了它，会导致所有第三方库导入全部报“无法解析导入”错误。开发中应当始终切换至 Conda、Homebrew 或项目自建的虚拟环境（`.venv`）中。
+
 
